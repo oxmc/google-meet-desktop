@@ -1,60 +1,47 @@
 /* All window creation functions */
+const { BrowserWindow, BrowserView, ipcMain, screen, app } = require("electron");
+const windowStateKeeper = require("electron-window-state");
 const path = require("path");
 const fs = require("fs");
-const {
-  BrowserWindow,
-  BrowserView,
-  ipcMain,
-  screen,
-  app,
-} = require("electron");
-const windowStateKeeper = require("electron-window-state");
+var appdir = app.getAppPath();
+const config = require(`${appdir}/src/main/config.json`);
 
-const GOOGLE_MEET_URL = "https://meet.google.com/";
-
+/* Window functions */
 function createMainWindow() {
   const mainWindowState = windowStateKeeper({
-    defaultWidth: 1000,
-    defaultHeight: 800,
+    defaultWidth: 1200,
+    defaultHeight: 400,
     fullScreen: false,
     maximize: true,
   });
-
   const mainWindow = (global.mainWindow = new BrowserWindow({
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
     height: mainWindowState.height,
     minWidth: 800,
-    minHeight: 600,
+    minHeight: 400,
     frame: false,
     webPreferences: {
       contextIsolation: true,
-      preload: path.join(__dirname, "..", "renderer", "preload.js"),
+      preload: `${appdir}/src/renderer/preload.js`,
     },
   }));
   mainWindowState.manage(mainWindow);
-  mainWindow.loadFile(path.join(__dirname, "..", "renderer", "index.html"));
-  // mainWindow.webContents.openDevTools();
+  mainWindow.loadFile(`${appdir}/src/renderer/index.html`);
+  //mainWindow.webContents.openDevTools();
   mainWindow.webContents.on("did-finish-load", () => {
     if (mainWindow.isMaximized()) {
       mainWindow.webContents.send("window.maximized");
     }
   });
-
   const googleMeetView = (global.googleMeetView = new BrowserView({
     webPreferences: {
-      preload: path.join(
-        __dirname,
-        "..",
-        "renderer",
-        "adapters",
-        "polyfill.js"
-      ),
+      preload: `${appdir}/src/renderer/adapters/polyfill.js`,
     },
   }));
   mainWindow.setBrowserView(googleMeetView);
-  googleMeetView.webContents.loadURL(GOOGLE_MEET_URL);
+  googleMeetView.webContents.loadURL(config.URL);
   googleMeetView.setBounds({
     x: 0,
     y: 40,
@@ -63,15 +50,10 @@ function createMainWindow() {
   });
   googleMeetView.webContents.on("did-finish-load", () => {
     googleMeetView.webContents.insertCSS(
-      fs
-        .readFileSync(
-          path.join(__dirname, "..", "renderer", "css", "screen.css")
-        )
-        .toString()
+      fs.readFileSync(`${appdir}/src/renderer/css/screen.css`).toString()
     );
   });
   // googleMeetView.webContents.openDevTools();
-
   mainWindow.on("resize", () => {
     googleMeetView.setBounds({
       x: 0,
@@ -80,77 +62,63 @@ function createMainWindow() {
       height: mainWindow.getBounds().height - 40,
     });
   });
-
+  /* Buttons */
   mainWindow.on("maximize", () => {
     mainWindow.webContents.send("window.maximized");
   });
-
   mainWindow.on("unmaximize", () => {
     mainWindow.webContents.send("window.restored");
   });
-
   ipcMain.on("window.minimize", (event) => {
     mainWindow.minimize();
   });
-
   ipcMain.on("window.maximize", (event) => {
     mainWindow.maximize();
     event.sender.send("window.maximized");
   });
-
   ipcMain.on("window.restore", (event) => {
-    mainWindow.restore();
+    mainWindow.unmaximize();
     event.sender.send("window.restored");
   });
-
   ipcMain.on("window.close", () => {
     mainWindow.close();
   });
-
   ipcMain.on("window.home", () => {
-    googleMeetView.webContents.loadURL(GOOGLE_MEET_URL);
+    googleMeetView.webContents.loadURL(config.URL);
   });
-
+  /* Canvas window */
   let canvasWindow = createCanvasWindow();
-
   const screenToolsWindow = createScreenToolsWindow();
-
   // screenToolsWindow.moveAbove(canvasWindow.getMediaSourceId());
-
+  /* Buttons */
   ipcMain.on("window.screenshare.show", () => {
     mainWindow.minimize();
     screenToolsWindow.show();
   });
-
   ipcMain.on("window.screenshare.hide", () => {
     screenToolsWindow.hide();
     screenToolsWindow.reload();
     canvasWindow.hide();
   });
-
   ipcMain.on("window.canvas.show", () => {
     canvasWindow.show();
   });
-
   ipcMain.on("window.canvas.hide", () => {
     canvasWindow.hide();
     canvasWindow.reload();
   });
-
   ipcMain.on("window.main.focus", () => {
     mainWindow.restore();
     mainWindow.focus();
   });
-
   ipcMain.on("screenshare.stop", () => {
     googleMeetView.webContents.send("screenshare.stop");
   });
-
   mainWindow.on("closed", () => {
     app.quit();
   });
 }
-
+/* Canvas window function */
 function createCanvasWindow() {
   const primaryWorkarea = screen.getPrimaryDisplay().bounds;
   const canvasWindow = new BrowserWindow({
@@ -162,20 +130,18 @@ function createCanvasWindow() {
     frame: false,
     webPreferences: {
       contextIsolation: true,
-      preload: path.join(__dirname, "..", "renderer", "preload.js"),
+      preload: `${appdir}/src/renderer/preload.js`,
     },
     focusable: false,
     show: false,
     resizable: false,
     skipTaskbar: true,
   });
-  canvasWindow.webContents.loadFile(
-    path.join(__dirname, "..", "renderer", "canvas.html")
-  );
+  canvasWindow.webContents.loadFile(`${appdir}/src/renderer/canvas.html`);
   canvasWindow.setAlwaysOnTop(true, "pop-up-menu");
   return canvasWindow;
 }
-
+/* Screen tools window */
 function createScreenToolsWindow() {
   const primaryWorkarea = screen.getPrimaryDisplay().bounds;
   const screenToolsWindow = new BrowserWindow({
@@ -191,17 +157,13 @@ function createScreenToolsWindow() {
     transparent: true,
     webPreferences: {
       contextIsolation: true,
-      preload: path.join(__dirname, "..", "renderer", "preload.js"),
+      preload: `${appdir}/src/renderer/preload.js`,
     },
   });
-
   screenToolsWindow.setContentProtection(process.platform === "darwin");
-
-  screenToolsWindow.webContents.loadFile(
-    path.join(__dirname, "..", "renderer", "toolbar.html")
-  );
+  screenToolsWindow.webContents.loadFile(`${appdir}/src/renderer/toolbar.html`);
   screenToolsWindow.setAlwaysOnTop(true, "screen-saver");
   return screenToolsWindow;
 }
-
+/* Export functions */
 module.exports = { createMainWindow };

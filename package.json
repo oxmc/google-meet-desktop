@@ -1,6 +1,6 @@
 {
   "name": "google-meet-desktop",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "description": "An unofficial desktop app for Google Meet",
   "main": "./src/index.js",
   "scripts": {
@@ -8,32 +8,47 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
   },
-  "repository": "https://github.com/electron/electron-quick-start",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oxmc/google-meet-desktop"
+  },
   "keywords": [
     "Electron",
-    "quick",
-    "start",
-    "tutorial",
-    "demo"
+    "Google-Meet"
   ],
-  "author": "Arjun Ganesan",
+  "author": {
+    "name": "oxmc",
+    "email": " oxmc7769@gmail.com"
+  },
   "license": "MIT",
   "devDependencies": {
-    "electron": "^8.2.4",
-    "electron-builder": "^22.6.0"
+    "electron": "^14.0.1",
+    "electron-builder": "^22.11.7"
   },
   "dependencies": {
+    "detect-rpi": "^1.4.0",
     "electron-window-state": "^5.0.3",
-    "mac-screen-capture-permissions": "^1.1.0"
+    "fs": "^0.0.1-security",
+    "mac-screen-capture-permissions": "^2.0.0",
+    "path": "^0.12.7",
+    "pi-camera-connect": "^0.3.4",
+    "request": "^2.88.2"
   },
   "build": {
-    "appId": "com.arjunganesan.googleMeet",
+    "appId": "com.oxmc.github.googleMeet",
     "productName": "Google Meet",
     "mac": {
+      "icon": "build/app.icns",
+      "category": "Network",
       "extendInfo": {
         "NSCameraUsageDescription": "This app requires camera access for video call in Google Meet.",
         "NSMicrophoneUsageDescription": "This app requires microphone access for audio call in Google Meet."
       }
+    },
+    "linux": {
+      "target": "appimage deb",
+      "icon": "build/app.png",
+      "category": "Network"
     }
   }
 }
