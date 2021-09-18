@@ -44,48 +44,6 @@ You can [download the latest release](https://github.com/oxmc/google-meet-deskto
 
 You'll need [Node.js](https://nodejs.org) installed on your computer in order to build this app.
 
-### Linux:
-
-```
-git clone https://github.com/oxmc/google-meet-desktop
-cd google-meet-desktop
-npm install
-```
-
-#### Test app:
-
-```
-npm start
-```
-
-#### Build app:
-
-```
-npm run dist
-```
-
-### Mac:
-
-```
-git clone https://github.com/oxmc/google-meet-desktop
-cd google-meet-desktop
-npm install
-```
-
-#### Test app:
-
-```
-npm start
-```
-
-#### Build app:
-
-```
-npm run dist
-```
-
-### Windows:
-
 ```
 git clone https://github.com/oxmc/google-meet-desktop
 cd google-meet-desktop
