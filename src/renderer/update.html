@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <center>
+    <video id="LoadingAnimation" width="320" height="240" autoplay>
+      <source src="./media/loading.webm" type="video/webm">
+      Your browser does not support the video tag.
+    </video>
+    <br>
+    <h2>Updating...<h2>
+    <span id="progress-text"></span>
+    <span id="download-progress-text"></span>
+    <script>
+      /* Loading animation loop */
+      var Loading = document.getElementById("LoadingAnimation");
+      Loading.loop = true;
+      Loading.load();
+
+      /* Show download progress */
+      var downloadProgressText = document.getElementById("download-progress-text");
+      var startTime = new Date().getTime();
+      var progress = document.getElementById("progress");
+      var progressText = document.getElementById("progress-text");
+
+      var os = require('os');
+      var request = require('request');
+      const electron = require('electron');
+      const path = require('path');
+      const fs = require('fs');
+      var rimraf = require("rimraf");
+      const decompress = require("decompress");
+      const remote = electron.remote
+      const ipcRenderer = electron.ipcRenderer
+
+      const config = require('../configs/config.json'); // Read the config
+      var serverUrl = config.serverurl
+
+      async function Download() {
+        console.log("Downloading latest version...");
+        progressText.innerHTML = 'Downloading files...';
+  	    console.log("OS type is: "+os.platform());
+  	    console.log("Downloading '"+serverUrl+"'");
+        try {
+          var fileUrl = serverUrl;
+          var output = "app.zip";
+          await request({url: fileUrl, encoding: null}, function(err, resp, body) {
+            if(err) throw progressText.innerHTML = 'ERROR!';
+            fs.writeFile(output, body, function(err) {
+              console.log("Successfully downloaded new update!");
+              progressText.innerHTML = 'Download Complete!';
+              setTimeout(async function () {
+                progressText.innerHTML = 'Extracting files...';
+                console.log("Extracting files...");
+                try {
+                  await decompress("app.zip", "src").then(files => {
+                    console.log("Extraction complete!");
+                    progressText.innerHTML = 'Extraction Complete!';
+                    ipcRenderer.sendSync('synchronous-message', '2')
+                  });
+                } catch (error) {
+                  console.log(error);
+                  ipcRenderer.sendSync('synchronous-message', '5')
+                }
+              }, 2000)
+            });
+          });
+          //Delete app.zip
+          await unlink('app.zip', (err) => {
+            if (err) throw err;
+            console.log('app.zip was deleted');
+          });
+        } catch(e) {
+          var url = serverUrl
+          var data = {
+            "url": url,
+            "notif": '4'
+          }
+          console.log("ERROR: Unable to download '"+serverUrl+"'");
+          ipcRenderer.sendSync('synchronous-message', data)
+        }
+      }
+
+      /* After loading, download update */
+      setTimeout(function () {
+        Download();
+      }, 5000)
+    </script>
+  </center>
+</body>
+</html>

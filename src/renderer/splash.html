@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="css/index.css" rel="stylesheet" />
+</head>
+<body>
+  <center>
+    <!--<img src="./assets/loading.gif" />-->
+    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin:auto;display:block;" width="150px" height="200px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
+      <circle cx="50" cy="50" r="30" stroke="#46dff0" stroke-width="10" fill="none"></circle>
+      <circle cx="50" cy="50" r="30" stroke="#e90c59" stroke-width="8" stroke-linecap="round" fill="none">
+        <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" values="0 50 50;180 50 50;720 50 50" keyTimes="0;0.5;1"></animateTransform>
+        <animate attributeName="stroke-dasharray" repeatCount="indefinite" dur="1s" values="18.84955592153876 169.64600329384882;94.2477796076938 94.24777960769377;18.84955592153876 169.64600329384882" keyTimes="0;0.5;1"></animate>
+      </circle>
+    </svg>
+    <p id="progress-text">Checking for updates...</p>
+    <p id="download-progress-text"></p>
+    <br>
+    <script>
+      const { app, ipcRenderer, ipcMain } = require('electron')
+      var os = require('os');
+      var config = require('../main/config.json');
+      const path = require('path');
+      const { parse } = require('url')
+      const request = require('request')
+      const fs = require('fs');
+      var rimraf = require("rimraf");
+      const decompress = require("decompress");
+      const exec = require('child_process').exec;
+
+      /*Elements*/
+      var progressText = document.getElementById("progress-text");
+      var downloadProgressText = document.getElementById("download-progress-text");
+
+      /*Functions*/
+      function execute(command, callback) {
+          exec(command, (error, stdout, stderr) => {
+              callback(stdout);
+          });
+      };
+
+      function Download (url, filename) {
+        console.log("Downloading latest version...");
+        progressText.innerHTML = 'Downloading files...';
+  	    console.log(`OS type is: ${os.platform()}`);
+  	    console.log(`Downloading '${filename}' from '${url}'`);
+        var received_bytes = 0;
+        var total_bytes = 0;
+        var downloaded = 0;
+        var outStream = fs.createWriteStream(filename);
+        request.get(url).on('error', function(err) {
+          console.log(err);
+        }).on('response', function(data) {
+          total_bytes = parseInt(data.headers['content-length']);
+        }).on('data', function(chunk) {
+          received_bytes += chunk.length;
+          var percentage = ((received_bytes * 100) / total_bytes).toFixed(2);
+          downloadProgressText.innerHTML = `${percentage}% of ${received_bytes} bytes downloaded out of ${total_bytes} bytes.`
+          if (percentage == "100.00") {
+            console.log("Successfully downloaded new update!");
+            progressText.innerHTML = 'Download Complete!';
+            setTimeout(async function () {
+              progressText.innerHTML = 'Restarting...';
+              ipcRenderer.send('FromSplashWindow', 'Restart');
+            }, 2000)
+          }
+        }).pipe(outStream);
+      };
+
+      /*Check for updates*/
+      ipcRenderer.on('SplashWindow', (event, arg) => {
+        //console.log(arg);
+        if (arg == "Latest") {
+          progressText.innerHTML = "Loading..."
+          ipcRenderer.send('FromSplashWindow', 'ShowMainWindow');
+        } else if (arg == "Update") {
+          progressText.innerHTML = "Downloading updates..."
+          var appfile;
+          if (os.platform() == "win32") {
+            appfile = `${app.getPath('home')}/${appname}.exe`;
+          } else if (os.platform() == "darwin") {
+            appfile = `${app.getPath('home')}/${appname}.app`;
+          } else if (os.platform() == "linux") {
+            appfile = `${app.getPath('home')}/${appname}.appimage`;
+          };
+          Download(`${config.Latest}`, `${appfile}`);
+        }
+      })
+
+      /*try {
+        await decompress("app.zip", "src").then(files => {
+          console.log("Extraction complete!");
+          progressText.innerHTML = 'Extraction Complete!';
+          ipcRenderer.sendSync('synchronous-message', '2')
+        });
+      } catch (error) {
+        console.log(error);
+        ipcRenderer.sendSync('synchronous-message', '5')
+      }
+
+      try {
+        await unlink('app.zip', (err) => {
+          if (err) throw err;
+          console.log('app.zip was deleted');
+        });
+      } catch(e) {
+        console.log(`ERROR: Unable to download '${config.Latest}'`);
+      }*/
+    </script>
+  </center>
+</body>
+</html>

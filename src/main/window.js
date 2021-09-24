@@ -8,6 +8,21 @@ const config = require(`${appdir}/src/main/config.json`);
 
 /* Window functions */
 function createMainWindow() {
+  const SplashWindow = (global.SplashWindow = new BrowserWindow({
+    width: 390,
+    height: 370,
+    frame: false,
+    transparent: false,
+    skipTaskbar: true,
+    center: true,
+    icon: `${appdir}/src/main/renderer/assets/app.png`,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    }
+  }));
+  SplashWindow.loadFile(`${appdir}/src/renderer/splash.html`);
+  //SplashWindow.webContents.openDevTools();
   const mainWindowState = windowStateKeeper({
     defaultWidth: 1200,
     defaultHeight: 400,
@@ -22,6 +37,7 @@ function createMainWindow() {
     minWidth: 800,
     minHeight: 400,
     frame: false,
+    center: true,
     webPreferences: {
       contextIsolation: true,
       preload: `${appdir}/src/renderer/preload.js`,
@@ -30,14 +46,10 @@ function createMainWindow() {
   mainWindowState.manage(mainWindow);
   mainWindow.loadFile(`${appdir}/src/renderer/index.html`);
   //mainWindow.webContents.openDevTools();
-  mainWindow.webContents.on("did-finish-load", () => {
-    if (mainWindow.isMaximized()) {
-      mainWindow.webContents.send("window.maximized");
-    }
-  });
+  mainWindow.hide();
   const googleMeetView = (global.googleMeetView = new BrowserView({
     webPreferences: {
-      preload: `${appdir}/src/renderer/adapters/polyfill.js`,
+      preload: `${appdir}/src/renderer/preload-2.js`,
     },
   }));
   mainWindow.setBrowserView(googleMeetView);
@@ -53,7 +65,7 @@ function createMainWindow() {
       fs.readFileSync(`${appdir}/src/renderer/css/screen.css`).toString()
     );
   });
-  // googleMeetView.webContents.openDevTools();
+  //googleMeetView.webContents.openDevTools();
   mainWindow.on("resize", () => {
     googleMeetView.setBounds({
       x: 0,
@@ -82,6 +94,7 @@ function createMainWindow() {
   });
   ipcMain.on("window.close", () => {
     mainWindow.close();
+    app.quit();
   });
   ipcMain.on("window.home", () => {
     googleMeetView.webContents.loadURL(config.URL);
@@ -113,9 +126,6 @@ function createMainWindow() {
   });
   ipcMain.on("screenshare.stop", () => {
     googleMeetView.webContents.send("screenshare.stop");
-  });
-  mainWindow.on("closed", () => {
-    app.quit();
   });
 }
 /* Canvas window function */

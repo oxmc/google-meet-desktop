@@ -1,6 +1,6 @@
 {
   "name": "google-meet-desktop",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "An unofficial desktop app for Google Meet",
   "main": "./src/index.js",
   "scripts": {
@@ -26,13 +26,19 @@
     "electron-builder": "^22.11.7"
   },
   "dependencies": {
+    "decompress": "^4.2.1",
     "detect-rpi": "^1.4.0",
     "electron-window-state": "^5.0.3",
     "fs": "^0.0.1-security",
+    "http": "^0.0.1-security",
+    "https": "^1.0.0",
     "mac-screen-capture-permissions": "^2.0.0",
+    "node-notifier": "^10.0.0",
+    "os": "^0.1.2",
     "path": "^0.12.7",
     "pi-camera-connect": "^0.3.4",
-    "request": "^2.88.2"
+    "request": "^2.88.2",
+    "rimraf": "^3.0.2"
   },
   "build": {
     "appId": "com.oxmc.github.googleMeet",
@@ -46,7 +52,10 @@
       }
     },
     "linux": {
-      "target": "appimage deb",
+      "target": [
+        "appimage",
+        "deb"
+      ],
       "icon": "build/app.png",
       "category": "Network"
     }
